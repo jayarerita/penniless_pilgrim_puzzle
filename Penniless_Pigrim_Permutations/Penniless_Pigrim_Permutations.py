@@ -28,63 +28,178 @@ Credit: The NYTimes' Daniel Finkel
 https://wordplay.blogs.nytimes.com/2013/08/26/pilgrim/
 '''
 
-import pandas as pd
+''' 
+The grid of streets is set up as a (0, 1, 2, 3, 4) x (0, 1, 2, 3, 4) grid of 
+coordinates representing corners (intersections of streets where the coordinate 
+(0, 0) is the bottom left (South East) corner.
 
-# Given any loc as a list of two integers between 0 & 4 specifying a locatoin on the 5x5 node 
-# grid and given a list of streets already traveled this function will return a list of valid 
-# directoins to travel.
-def valid_dir(loc, history):
-    # Create an empty list of valid directions.
-    valid = []
-    # Create a series of strings representing the a street to travel. 
-    ### Need to come up with a way to deal with reverse directions.
-    street_N = str(loc) + 'to' + str([loc[0], loc[1]+1])
-    street_S = str(loc) + 'to' + str([loc[0], loc[1]-1])
-    street_E = str(loc) + 'to' + str([loc[0]+1, loc[1]])
-    street_W = str(loc) + 'to' + str([loc[0]-1, loc[1]])
-    possible_streets = {'N':street_N, 'S':street_S, 'E':street_E, 'W':street_W}
-    # Set all the forbidden streets (ie - those walked on before) to False
-    forbidden_steets = {'N':False, 'S':False, 'E':False, 'W':False}
-    # Iterate through all rows in the df of the traveler's history and see if they have 
-    # traveled the street before.
-    for row in history:
-        # Iterate through all the possible directoins of travel
-        for key in possible_streets:
-            # If the street has been traveled before, change its value in the 
-            # forbidden_streets dictionary to True
-            if possible_streets[key] == history.loc[row]:
-                forbidden_steets[key] = True
+['(04)', '(14)', '(24)', '(34)', '(44)']
+['(03)', '(13)', '(23)', '(33)', '(43)']
+['(02)', '(12)', '(22)', '(32)', '(42)']
+['(01)', '(11)', '(21)', '(31)', '(41)']  N↑
+['(00)', '(10)', '(20)', '(30)', '(40)']  E→
+'''
 
-    # add all the not forbidden directions to the list of valid directions
-    for key in forbidden_streets:
-        if forbidden_steets[key] == Fallse:
-            valid.append(key)
+# This class will hold current and accumulated information on a traveler.
+class traveler(object):
+
+    #Create the attributes of the class
+    def __init__(self, loc):
+        self.loc = loc      # The coordinates of the traveler as a string.
+        self.tax = 0        # The accumulated tax of the traveler.
+        self.history = []   # The history of streets traveled.
+    
+    # Add a street traveled to the history of the traveler.
+    def add_street(self, street):
+        self.history.append(street)
+
+    # Check to see if a street has been traveled in one direction or the other.
+    # Returns True if it has been traveled before or False if it has not.
+    def search_street(self, street):
+        traveled = False    # False indicates the street has not been traveled. Start at False.
+        # Create the reverse string of the street to check also incase it was traveled in the 
+        # opposite direction.
+        street_rev = street.split(" to ")[-1] + ' to ' + street.split(" to ")[0]
+
+        # Check all previously traveled streets in history
+        for old in self.history:
+            # Check to see if equal to the current direction or the reverse.
+            if old == street or old == street_rev:
+                traveled = True
+
+        return traveled
 
     # Check to see if the current locaion is along any borders of the town. If so
     # remove the possible direction out of town.
-    if loc[0] == 0:
-        valid.remove('W')
-    if loc[0] == 4:
-        valid.remove('E')
-    if loc[1] == 4:
-        valid.remove('N')
-    if loc[1] == 0:
-        valid.remove('S')
+    def out_of_bounds(self, loc):
+        # Create empty list assing no directions are out of bounds to start
+        out_of_bounds_streets = []
 
-    # Return a list of possible directions to move
-    return(valid)
+        # Check the X coord to see if it is on the western board, if so add 'W'
+        if loc[0] == 0:
+            out_of_bounds_streets.append('W')
+        # Check the X coord to see if it is on the western board, if so add 'E'
+        if loc[0] == 4:
+            out_of_bounds_streets.append('E')
+        # Check the Y coord to see if it is on the western board, if so add 'N'
+        if loc[1] == 4:
+            out_of_bounds_streets.append('N')
+        # Check the Y coord to see if it is on the western board, if so add 'S'
+        if loc[1] == 0:
+            out_of_bounds_streets.append('S')
+
+        return out_of_bounds_streets
+
+    # Given any loc as a list of two integers between 0 & 4 specifying a locatoin on the 5x5 node 
+    # grid and given a list of streets already traveled this function will return a list of valid 
+    # directoins to travel.
+    def valid_dir(self):
+        # Create an empty list of valid directions.
+        valid = []
+        # get dictionary of streets in all directions based on current location
+        possible_streets = self.direction_streets()
+        # Set all the forbidden streets (ie - those walked on before) to False
+        forbidden_streets = {'N':False, 'S':False, 'E':False, 'W':False}
+     
+        # Check all directions, N, S, E, W
+        for key in possible_streets:
+            # Send the street to search_street method and if True change value in
+            # the forbidden streets dictionary to True
+            if self.search_street(possible_streets[key]):
+                forbidden_streets[key] = True
+
+        # add all the not forbidden directions to the list of valid directions
+        for key in forbidden_streets:
+            if forbidden_streets[key] == False:
+                valid.append(key)
+
+        # Subtract any directions out of bounds from the valid directoins
+        #### Can't subtract need to do something else
+        temp = valid
+        valid = [x for x in temp if x not in self.out_of_bounds(self.loc)]
+
+        # Return a list of possible directions to move
+        return(valid)
+
+    # Returns a dictionary of all the directoins  paired with the consequential street strings 
+    # if that direction is traveled.
+    def direction_streets(self):
+        # Create a series of strings representing the a street to travel. 
+        street_N = str(self.loc) + ' to ' + str([self.loc[0], self.loc[1]+1])
+        street_S = str(self.loc) + ' to ' + str([self.loc[0], self.loc[1]-1])
+        street_E = str(self.loc) + ' to ' + str([self.loc[0]+1, self.loc[1]])
+        street_W = str(self.loc) + ' to ' + str([self.loc[0]-1, self.loc[1]])
+        streets = {'N':street_N, 'S':street_S, 'E':street_E, 'W':street_W}
+
+        return streets
+
+    # Add tax to the running total based on direction moved
+    def add_tax(self, dir):
+        
+        if dir == 'N':
+            self.tax = 2 * self.tax
+        if dir == 'S':
+            self.tax = self.tax / 2
+        if dir == 'E':
+            self.tax += 2
+        if dir == 'W':
+            self.tax -= 2
+
+    # Change the location coordinates based on direction moved
+    def new_loc(self, dir):
+        if dir == 'N':
+            self.loc[1] += 1
+        if dir == 'S':
+            self.loc[1] -= 1
+        if dir == 'E':
+            self.loc[0] += 1
+        if dir == 'W':
+            self.loc[0] -= 1
+
+    def move(self, dir):
+        # Get list of possible streets to take in all directions
+        possible_streets = self.direction_streets()
+        # Add the chosen street to the history of traveled streets
+        self.add_street(possible_streets[dir])
+        # Update the tax
+        self.add_tax(dir)
+        # Update the current location
+        self.new_loc(dir)
 
 
-### Should probably create a traveler class to hold attributes such as current location 
-#(a list of 2 integer coordinates), historical streets (a list of all the streets traveled), 
-# tax owed (a float indicated accrued tax up to that point)
-traveler = pd.DataFrame([0, 0, null], columns = ['x', 'y', 'hist_streets'])
+# Now the game begins...
 
-# All possible, though maybe not valid, directions of travel from any point
-directions = ['N', 'S', 'E', 'W']
+print("You are a traveler starting at the northwest corner of the grid below.")
+print('N↑  E→')
+for y in range(4, -1, -1):
+    line = ''
+    for x in range(5):
+        if x != 4:
+            section = '('+str(x)+str(y)+')-'
+        else:
+            section = '('+str(x)+str(y)+')'
+        line += section
+    print(line)
+    if y != 0:
+        print(' |     |    |    |    |')
 
-for dir in directions:
-    valid = valid_dir(dir)
+# new instance of traveler
+me = traveler([0,4])
 
+print("You can go : " + str(me.valid_dir()))
+print("Please select a direction to move: ")
+direction = input()
+me.move(direction.upper())
 
+while me.valid_dir() != []:
+    print("history" + str(me.history))
+    print("Your current tax is: " + str(me.tax))
+    print("Your current location is: " + str(me.loc))
+    print("You can go : " + str(me.valid_dir()))
+    print("Please select a direction to move: ")
+    direction = input().upper()
+    me.move(direction)
 
+print("You can no longer move.")
+print("Your current tax is: " + str(me.tax))
+print("Your current location is: " + str(me.loc))
