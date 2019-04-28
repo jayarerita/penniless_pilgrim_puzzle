@@ -40,6 +40,8 @@ coordinates representing corners (intersections of streets where the coordinate
 ['(00)', '(10)', '(20)', '(30)', '(40)']  E→
 '''
 
+import os
+
 # This class will hold current and accumulated information on a traveler.
 class traveler(object):
 
@@ -157,49 +159,58 @@ class traveler(object):
             self.loc[0] -= 1
 
     def move(self, dir):
-        # Get list of possible streets to take in all directions
-        possible_streets = self.direction_streets()
-        # Add the chosen street to the history of traveled streets
-        self.add_street(possible_streets[dir])
-        # Update the tax
-        self.add_tax(dir)
-        # Update the current location
-        self.new_loc(dir)
+        dir = dir.upper()
+        dir_list = ['N', 'S', 'E', 'W']
+        if dir not in dir_list:
+            print("You entered an invalid character")
+        else:
+            # Get list of possible streets to take in all directions
+            possible_streets = self.direction_streets()
+            # Add the chosen street to the history of traveled streets
+            self.add_street(possible_streets[dir])
+            # Update the tax
+            self.add_tax(dir)
+            # Update the current location
+            self.new_loc(dir)
 
+    def print_grid(self):
+        os.system('cls')
+        for y in range(4, -1, -1):
+            line = ''
+            for x in range(5):
+                if x == self.loc[0] and y == self.loc[1]:
+                    section = '(XX)'
+                else:
+                    section = '('+str(x)+str(y)+')'
+                if x != 4:
+                    section += '-'
+                line += section
+            print(line)
+            if y != 0:
+                print(' |     |    |    |    |')
 
 # Now the game begins...
 
 print("You are a traveler starting at the northwest corner of the grid below.")
-print('N↑  E→')
-for y in range(4, -1, -1):
-    line = ''
-    for x in range(5):
-        if x != 4:
-            section = '('+str(x)+str(y)+')-'
-        else:
-            section = '('+str(x)+str(y)+')'
-        line += section
-    print(line)
-    if y != 0:
-        print(' |     |    |    |    |')
 
 # new instance of traveler
 me = traveler([0,4])
 
+me.print_grid()
 print("You can go : " + str(me.valid_dir()))
 print("Please select a direction to move: ")
 direction = input()
 me.move(direction.upper())
 
 while me.valid_dir() != []:
+    me.print_grid()
     print("history" + str(me.history))
     print("Your current tax is: " + str(me.tax))
-    print("Your current location is: " + str(me.loc))
     print("You can go : " + str(me.valid_dir()))
     print("Please select a direction to move: ")
     direction = input().upper()
     me.move(direction)
 
+me.print_grid()
 print("You can no longer move.")
 print("Your current tax is: " + str(me.tax))
-print("Your current location is: " + str(me.loc))
