@@ -41,14 +41,15 @@ coordinates representing corners (intersections of streets where the coordinate
 '''
 
 import os
+import random
 
 # This class will hold current and accumulated information on a traveler.
 class traveler(object):
 
     #Create the attributes of the class
-    def __init__(self, loc):
-        self.loc = loc      # The coordinates of the traveler as a string.
-        self.tax = 0        # The accumulated tax of the traveler.
+    def __init__(self):
+        self.loc = [0,4]    # The coordinates of the traveler as a string.
+        self.tax = 0.0        # The accumulated tax of the traveler.
         self.history = []   # The history of streets traveled.
     
     # Add a street traveled to the history of the traveler.
@@ -138,9 +139,9 @@ class traveler(object):
     # Add tax to the running total based on direction moved
     def add_tax(self, dir):
         
-        if dir == 'N':
-            self.tax = 2 * self.tax
         if dir == 'S':
+            self.tax = 2 * self.tax
+        if dir == 'N':
             self.tax = self.tax / 2
         if dir == 'E':
             self.tax += 2
@@ -173,11 +174,14 @@ class traveler(object):
             # Update the current location
             self.new_loc(dir)
 
+    # clear the text print out and print a new grid showing the current location
     def print_grid(self):
+        # clear text print out
         os.system('cls')
         for y in range(4, -1, -1):
             line = ''
             for x in range(5):
+                # when the current location is encounted replace numbers
                 if x == self.loc[0] and y == self.loc[1]:
                     section = '(XX)'
                 else:
@@ -186,31 +190,69 @@ class traveler(object):
                     section += '-'
                 line += section
             print(line)
+            # Verical street representations everyother line
             if y != 0:
                 print(' |     |    |    |    |')
 
+    # this method will move the travler from 0,4 to 2,4 as stated in the problem start by moving E twice
+    def modified_start(self):
+        self.move('E')
+        self.move('E')
+
+    def reset(self):
+        self.loc = [0,4]    # The coordinates of the traveler as a string.
+        self.tax = 0.0        # The accumulated tax of the traveler.
+        self.history = []   # The history of streets traveled.
+
 # Now the game begins...
 
-print("You are a traveler starting at the northwest corner of the grid below.")
+####Interactive version
+#print("You are a traveler starting at the northwest corner of the grid below.")
 
 # new instance of traveler
-me = traveler([0,4])
+#me = traveler()
 
-me.print_grid()
-print("You can go : " + str(me.valid_dir()))
-print("Please select a direction to move: ")
-direction = input()
-me.move(direction.upper())
+#me.print_grid()
+#print("You can go : " + str(me.valid_dir()))
+#print("Please select a direction to move: ")
+#direction = input()
+#me.move(direction.upper())
 
-while me.valid_dir() != []:
-    me.print_grid()
-    print("history" + str(me.history))
-    print("Your current tax is: " + str(me.tax))
-    print("You can go : " + str(me.valid_dir()))
-    print("Please select a direction to move: ")
-    direction = input().upper()
-    me.move(direction)
+#while me.valid_dir() != []:
+#    me.print_grid()
+#    print("history" + str(me.history))
+#    print("Your current tax is: " + str(me.tax))
+#    print("You can go : " + str(me.valid_dir()))
+#    print("Please select a direction to move: ")
+#    direction = input().upper()
+#    me.move(direction)
 
-me.print_grid()
-print("You can no longer move.")
+#me.print_grid()
+#print("You can no longer move.")
+#print("Your current tax is: " + str(me.tax))
+
+
+me = traveler()
+
+me.modified_start()
+
+# Until the bottom corner is reached with 0 tax continue to move randomly
+counter = 1
+while not(me.tax == 0 and me.loc == [4,0]):
+    # As long as there is a direction to move, pick a random one an move
+    if (me.valid_dir() != []):
+        index = random.randint(0, len(me.valid_dir())-1)
+        #print("valid_dir: %s len(valid_dir): %i index: %i" % (str(me.valid_dir()), len(me.valid_dir()), index))
+        rand_dir = me.valid_dir()[index]
+        #print("rand_dir: %s" % (rand_dir))
+        me.move(rand_dir)
+    else:
+        me.reset()
+        me.modified_start()
+        counter += 1
+
+print("counter: %i" % counter)
 print("Your current tax is: " + str(me.tax))
+print("Your current location is: " + str(me.loc))
+print(me.history)
+    
